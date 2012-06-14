@@ -41,6 +41,8 @@ class Player(wx.Frame):
         wx.Frame.__init__(self, None, -1, title,
                           pos=wx.DefaultPosition, size=(550, 500))
 
+        self.useTimer = True
+
         # Menu Bar
         #   File Menu
         self.frame_menubar = wx.MenuBar()
@@ -74,6 +76,7 @@ class Player(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.OnStop, stop)
         self.Bind(wx.EVT_BUTTON, self.OnToggleVolume, volume)
         self.Bind(wx.EVT_SLIDER, self.OnSetVolume, self.volslider)
+        self.Bind(wx.EVT_SLIDER, self.OnSeek, self.timeslider)
 
         # Give a pretty layout to the controls
         ctrlbox = wx.BoxSizer(wx.VERTICAL)
@@ -100,8 +103,9 @@ class Player(wx.Frame):
         self.SetMinSize((350, 300))
 
         # finally create the timer, which updates the timeslider
-        self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.OnTimer, self.timer)
+        if self.useTimer:
+            self.timer = wx.Timer(self)
+            self.Bind(wx.EVT_TIMER, self.OnTimer, self.timer)
 
         # VLC player controls
         self.Instance = vlc.Instance()
@@ -161,7 +165,8 @@ class Player(wx.Frame):
             if self.player.play() == -1:
                 self.errorDialog("Unable to play.")
             else:
-                self.timer.Start()
+                if self.useTimer:
+                    self.timer.Start()
 
     def OnPause(self, evt):
         """Pause the player.
@@ -174,7 +179,8 @@ class Player(wx.Frame):
         self.player.stop()
         # reset the time slider
         self.timeslider.SetValue(0)
-        self.timer.Stop()
+        if self.useTimer:
+            self.timer.Stop()
 
     def OnTimer(self, evt):
         """Update the time slider according to the current movie time.
@@ -206,6 +212,11 @@ class Player(wx.Frame):
         # vlc.MediaPlayer.audio_set_volume returns 0 if success, -1 otherwise
         if self.player.audio_set_volume(volume) == -1:
             self.errorDialog("Failed to set volume")
+    
+    def OnSeek(self, evt):
+        time = self.timeslider.GetValue()
+        print "seeking to %d" % time
+        self.player.set_time(time)
 
     def errorDialog(self, errormessage):
         """Display a simple error dialog.
