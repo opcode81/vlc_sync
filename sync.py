@@ -48,7 +48,7 @@ class DispatchingPlayer(Player):
 		super(DispatchingPlayer, self).OnSeek(time)
 		self.dispatch(evt="OnSeek", args=(time,))
 	
-	def dispatch(**d):
+	def dispatch(self, **d):
 		self.dispatcher.dispatch(d)
 
 	def handleNetworkEvent(self, d):
