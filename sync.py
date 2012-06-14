@@ -1,3 +1,26 @@
+# vlc_sync
+#
+# (C) 2012 by Dominik Jain (djain@gmx.net)
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 import socket
 import sys
 import threading
@@ -15,26 +38,27 @@ class DispatchingPlayer(Player):
 
 	def OnPlay(self, evt):
 		super(DispatchingPlayer, self).OnPlay(evt)
-		self.dispatcher.dispatch({"evt": "OnPlay", "args": (None,)})
+		self.dispatch(evt="OnPlay", args=(None,))
 	
 	def OnPause(self, evt):
 		super(DispatchingPlayer, self).OnPause(evt)
-		self.dispatcher.dispatch({"evt": "OnPause", "args": (None,)})
+		self.dispatch(evt="OnPause", args=(None,))
 	
 	def OnSeek(self, time):
 		super(DispatchingPlayer, self).OnSeek(time)
-		self.dispatcher.dispatch({"evt": "OnSeek", "args": (time,)})
+		self.dispatch(evt="OnSeek", args=(time,))
 	
-	def handleNetworkEvent(self, d):
-		evt, args = d["evt"], d["args"]
-		exec("Player.%s(self, *args)" % evt)
+	def dispatch(**d):
+		self.dispatcher.dispatch(d)
 
+	def handleNetworkEvent(self, d):
+		exec("super(DispatchingPlayer, self).%s(*d['args'])" % d["evt"])
+	
 class SyncServer(asyncore.dispatcher):
 	def __init__(self, port):
 		asyncore.dispatcher.__init__(self)
 		# start listening for connections
 		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-		#self.set_reuse_addr()
 		host = ""
 		self.bind((host, port))
 		self.connections = []
@@ -46,7 +70,7 @@ class SyncServer(asyncore.dispatcher):
 		pair = self.accept()
 		if pair is None:
 			return
-		print "got connection from %s" % str(pair[1])
+		print "incoming connection from %s" % str(pair[1])
 		conn = DispatcherConnection(pair[0], self)
 		self.connections.append(conn)
 		conn.sendData("hello %s" % str(pair[1]))
@@ -60,6 +84,7 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 	def __init__(self, connection, server):
 		asyncore.dispatcher_with_send.__init__(self, connection)
 		self.syncserver = server
+		self.player = server.player
 
 	def writable(self):
 		return bool(self.out_buffer)
@@ -67,22 +92,15 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 	def handle_write(self):
 		self.initiate_send()
 
-	#def log(self, message):
-	#    self.mainwindow.LogString(message, sock=self)
-
-	#def log_info(self, message, type='info'):
-	#    if type != 'info':
-	#        self.log(message)
-
 	def handle_read(self):
 		d = pickle.loads(self.recv(8192))
 		print "received: %s " % d
 		if type(d) == dict and "evt" in d:
-			print type(self.syncserver)
-			self.syncserver.player.handleNetworkEvent(d)
+			self.player.handleNetworkEvent(d)
 
 	def handle_close(self):
-		self.log("Connection dropped: %s"%(self.addr,))
+		print "connection dropped: %s" % self.addr
+		self.syncserver.connections.remove(self)
 		self.close()
 
 	def sendData(self, d):
@@ -93,8 +111,7 @@ class SyncClient(asyncore.dispatcher):
 	def __init__(self, server, port):
 		asyncore.dispatcher.__init__(self)
 		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)		
-		ret = self.connect((server, port))
-		print ret
+		self.connect((server, port))
 		# create actual player
 		self.player = DispatchingPlayer("Sync'd VLC Client", self)	
 		
@@ -126,7 +143,11 @@ if __name__=='__main__':
 		print "connecting to %s:%d" % (server, port)
 		client = SyncClient(server, port)
 	else:
-		print "usage: TODO"
+		appName = "sync.py"
+		print "\nvlc_sync\n\n"
+		print "usage:"
+		print "   server:  %s serve <port>" % appName
+		print "   client:  %s connect <server> <port>" % appName
 		sys.exit(1)
 	
 	networkThread = threading.Thread(target=networkLoop)
