@@ -19,12 +19,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
 #
-"""
-A simple example for VLC python bindings using wxPython.
-
-Author: Michele Orrù
-Date: 23-11-2010
-"""
 
 # import external libraries
 import wx # 2.8
