@@ -34,7 +34,7 @@ class Player(wx.Frame):
     def __init__(self, title):
         wx.Frame.__init__(self, None, -1, title,
                           pos=wx.DefaultPosition, size=(550, 500))
-
+        self.title = title
         self.useTimer = False
 
         # Menu Bar
@@ -132,7 +132,7 @@ class Player(wx.Frame):
             #  filename
             if title == -1:
                 title = filename
-            self.SetTitle("%s - wxVLCplayer" % title)
+            self.SetTitle("%s - %s" % (title, self.title))
 
             # set the window id where to render VLC's video output
             self.player.set_xwindow(self.videopanel.GetHandle())
