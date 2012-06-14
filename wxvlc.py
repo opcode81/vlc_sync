@@ -35,7 +35,7 @@ class Player(wx.Frame):
         wx.Frame.__init__(self, None, -1, title,
                           pos=wx.DefaultPosition, size=(550, 500))
         self.title = title
-        self.useTimer = False
+        self.useTimer = True
 
         # Menu Bar
         #   File Menu
@@ -160,7 +160,7 @@ class Player(wx.Frame):
                 self.errorDialog("Unable to play.")
             else:
                 if self.useTimer:
-                    self.timer.Start()
+                    wx.CallAfter(self.timer.Start)
 
     def OnPause(self, evt):
         """Pause the player.
@@ -174,19 +174,22 @@ class Player(wx.Frame):
         # reset the time slider
         self.timeslider.SetValue(0)
         if self.useTimer:
-            self.timer.Stop()
+            wx.CallAfter(self.timer.Stop)
+
+    def updateTimeSlider(self):
+        # update length
+        length = self.player.get_length()
+        self.timeslider.SetRange(-1, length)
+        # update the time on the slider
+        time = self.player.get_time()
+        self.timeslider.SetValue(time)
 
     def OnTimer(self, evt):
         """Update the time slider according to the current movie time.
         """
         # since the self.player.get_length can change while playing,
         # re-set the timeslider to the correct range.
-        length = self.player.get_length()
-        self.timeslider.SetRange(-1, length)
-
-        # update the time on the slider
-        time = self.player.get_time()
-        self.timeslider.SetValue(time)
+        self.updateTimeSlider()
 
     def OnToggleVolume(self, evt):
         """Mute/Unmute according to the audio button.
