@@ -13,20 +13,21 @@ class DispatchingPlayer(Player):
 		self.Centre()
 		self.Show()
 
-	def OnPlay(self, evt, dispatch=True):
+	def OnPlay(self, evt):
 		super(DispatchingPlayer, self).OnPlay(evt)
-		if dispatch: self.dispatcher.dispatch({"evt": "OnPlay", "args": (None,)})
+		self.dispatcher.dispatch({"evt": "OnPlay", "args": (None,)})
 	
-	def OnPause(self, evt, dispatch=True):
+	def OnPause(self, evt):
 		super(DispatchingPlayer, self).OnPause(evt)
-		if dispatch: self.dispatcher.dispatch({"evt": "OnPause", "args": (None,)})
+		self.dispatcher.dispatch({"evt": "OnPause", "args": (None,)})
+	
+	def OnSeek(self, time):
+		super(DispatchingPlayer, self).OnSeek(time)
+		self.dispatcher.dispatch({"evt": "OnSeek", "args": (time,)})
 	
 	def handleNetworkEvent(self, d):
-		evt = d["evt"]
-		if evt == "OnPlay":
-			Player.OnPlay(self.player, None)
-		elif evt == "OnPause":
-			Player.OnPause(self.player, None)
+		evt, args = d["evt"], d["args"]
+		exec("Player.%s(self, *args)" % evt)
 
 class SyncServer(asyncore.dispatcher):
 	def __init__(self, port):
@@ -39,7 +40,7 @@ class SyncServer(asyncore.dispatcher):
 		self.connections = []
 		self.listen(5)
 		# create actual player
-		player = DispatchingPlayer("Sync'd VLC Server", self)		
+		self.player = DispatchingPlayer("Sync'd VLC Server", self)		
 	
 	def handle_accept(self):		
 		pair = self.accept()
@@ -58,7 +59,7 @@ class SyncServer(asyncore.dispatcher):
 class DispatcherConnection(asyncore.dispatcher_with_send):
 	def __init__(self, connection, server):
 		asyncore.dispatcher_with_send.__init__(self, connection)
-		self.server = server
+		self.syncserver = server
 
 	def writable(self):
 		return bool(self.out_buffer)
@@ -77,7 +78,8 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 		d = pickle.loads(self.recv(8192))
 		print "received: %s " % d
 		if type(d) == dict and "evt" in d:
-			self.player.handleNetworkEvent(d)
+			print type(self.syncserver)
+			self.syncserver.player.handleNetworkEvent(d)
 
 	def handle_close(self):
 		self.log("Connection dropped: %s"%(self.addr,))

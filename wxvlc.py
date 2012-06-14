@@ -35,7 +35,7 @@ class Player(wx.Frame):
         wx.Frame.__init__(self, None, -1, title,
                           pos=wx.DefaultPosition, size=(550, 500))
 
-        self.useTimer = True
+        self.useTimer = False
 
         # Menu Bar
         #   File Menu
@@ -70,7 +70,7 @@ class Player(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.OnStop, stop)
         self.Bind(wx.EVT_BUTTON, self.OnToggleVolume, volume)
         self.Bind(wx.EVT_SLIDER, self.OnSetVolume, self.volslider)
-        self.Bind(wx.EVT_SLIDER, self.OnSeek, self.timeslider)
+        self.Bind(wx.EVT_SLIDER, self.OnMoveTimeSlider, self.timeslider)
 
         # Give a pretty layout to the controls
         ctrlbox = wx.BoxSizer(wx.VERTICAL)
@@ -207,9 +207,11 @@ class Player(wx.Frame):
         if self.player.audio_set_volume(volume) == -1:
             self.errorDialog("Failed to set volume")
     
-    def OnSeek(self, evt):
+    def OnMoveTimeSlider(self, evt):
         time = self.timeslider.GetValue()
-        print "seeking to %d" % time
+        self.OnSeek(time)
+    
+    def OnSeek(self, time):
         self.player.set_time(time)
 
     def errorDialog(self, errormessage):
