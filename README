@@ -1,0 +1,21 @@
+
+Synchronize video players for social video watching
+
+Prerequisites:
+* This video player is based on the VideoLAN media player. Install it first:
+  http://www.videolan.org
+* Python 2.5+ with wxPython installed
+
+Start a server:
+	python sync.py serve <port>
+
+Start a client on another machine:
+	python sync.py connect <server> <port>
+
+Load the same video on both computers.
+Seeking, play and pause are sync'd.
+
+TODO:
+* initial sync (must be done manually by seeking to start on either machine)
+* keeping track of sync in general, perhaps compensating for connection lag (could be done smoothly by setting the playback rate; yes, this is supported by VLC).
+* proper support for more than one client (client's actions are not echoed back to other clients, only the server's actions are passed to everyone).
