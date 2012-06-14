@@ -99,7 +99,7 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 			self.player.handleNetworkEvent(d)
 
 	def handle_close(self):
-		print "connection dropped: %s" % self.addr
+		print "client connection dropped"
 		self.syncserver.connections.remove(self)
 		self.close()
 
