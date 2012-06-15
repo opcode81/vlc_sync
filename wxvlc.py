@@ -118,11 +118,14 @@ class Player(wx.Frame):
         length = self.player.get_length()
         self.timeslider.SetRange(-1, length)
         # update the time on the slider
-        self.timeslider.SetValue(getTime())
+        self.timeslider.SetValue(self.getTime())
     
     def getTime(self):
         return self.player.get_time()
 
+    def getMedia(self):
+        return self.player.get_media()
+    
     def OnExit(self, evt):
         """Closes the window.
         """
@@ -153,9 +156,10 @@ class Player(wx.Frame):
             self.SetTitle("%s - %s" % (title, self.title))
 
             # set the window id where to render VLC's video output
-            self.player.set_xwindow(self.videopanel.GetHandle())
-            # FIXME: this should be made cross-platform
-            self.OnPlay(None)
+            self.player.set_xwindow(self.videopanel.GetHandle()) # for Linux/Unix
+            self.player.set_hwnd(self.videopanel.GetHandle()) # for Windows
+
+            self.play()
 
             # set the volume slider to the current volume
             self.volslider.SetValue(self.player.audio_get_volume() / 2)
@@ -170,7 +174,8 @@ class Player(wx.Frame):
         """
         # check if there is a file to play, otherwise open a
         # wx.FileDialog to select a file
-        if not self.player.get_media():
+        print "media: '%s' (%s)"  % (self.getMedia(), type(self.getMedia()))
+        if self.getMedia() is None:
             self.OnOpen(None)
         else:
             self.play()
