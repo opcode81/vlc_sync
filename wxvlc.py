@@ -105,6 +105,36 @@ class Player(wx.Frame):
         self.Instance = vlc.Instance()
         self.player = self.Instance.media_player_new()
 
+    def play(self):
+        """Toggle the status to Play/Pause.
+
+        If no file is loaded, open the dialog window.
+        """
+        # check if there is a file to play, otherwise open a
+        # wx.FileDialog to select a file
+        if not self.player.get_media():
+            self.OnOpen(None)
+        else:
+            # Try to launch the media, if this fails display an error message
+            if self.player.play() == -1:
+                self.errorDialog("Unable to play.")
+            else:
+                if self.useTimer:
+                    wx.CallAfter(self.timer.Start)
+    
+    def seek(self, time):
+        self.player.set_time(time)
+        
+    def updateTimeSlider(self):
+        # update length
+        length = self.player.get_length()
+        self.timeslider.SetRange(-1, length)
+        # update the time on the slider
+        self.timeslider.SetValue(getTime())
+    
+    def getTime(self):
+        return self.player.get_time()
+
     def OnExit(self, evt):
         """Closes the window.
         """
@@ -146,22 +176,8 @@ class Player(wx.Frame):
         dlg.Destroy()
 
     def OnPlay(self, evt):
-        """Toggle the status to Play/Pause.
-
-        If no file is loaded, open the dialog window.
-        """
-        # check if there is a file to play, otherwise open a
-        # wx.FileDialog to select a file
-        if not self.player.get_media():
-            self.OnOpen(None)
-        else:
-            # Try to launch the media, if this fails display an error message
-            if self.player.play() == -1:
-                self.errorDialog("Unable to play.")
-            else:
-                if self.useTimer:
-                    wx.CallAfter(self.timer.Start)
-
+        self.play()
+    
     def OnPause(self, evt):
         """Pause the player.
         """
@@ -175,14 +191,6 @@ class Player(wx.Frame):
         self.timeslider.SetValue(0)
         if self.useTimer:
             wx.CallAfter(self.timer.Stop)
-
-    def updateTimeSlider(self):
-        # update length
-        length = self.player.get_length()
-        self.timeslider.SetRange(-1, length)
-        # update the time on the slider
-        time = self.player.get_time()
-        self.timeslider.SetValue(time)
 
     def OnTimer(self, evt):
         """Update the time slider according to the current movie time.
@@ -215,7 +223,7 @@ class Player(wx.Frame):
         self.OnSeek(time)
     
     def OnSeek(self, time):
-        self.player.set_time(time)
+        self.seek(time)
 
     def errorDialog(self, errormessage):
         """Display a simple error dialog.
