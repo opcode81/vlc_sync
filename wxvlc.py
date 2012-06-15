@@ -106,21 +106,9 @@ class Player(wx.Frame):
         self.player = self.Instance.media_player_new()
 
     def play(self):
-        """Toggle the status to Play/Pause.
-
-        If no file is loaded, open the dialog window.
-        """
-        # check if there is a file to play, otherwise open a
-        # wx.FileDialog to select a file
-        if not self.player.get_media():
-            self.OnOpen(None)
-        else:
-            # Try to launch the media, if this fails display an error message
-            if self.player.play() == -1:
-                self.errorDialog("Unable to play.")
-            else:
-                if self.useTimer:
-                    wx.CallAfter(self.timer.Start)
+        if self.player.play() != -1:
+            if self.useTimer:
+                wx.CallAfter(self.timer.Start)
     
     def seek(self, time):
         self.player.set_time(time)
@@ -176,7 +164,16 @@ class Player(wx.Frame):
         dlg.Destroy()
 
     def OnPlay(self, evt):
-        self.play()
+        """Toggle the status to Play/Pause.
+
+        If no file is loaded, open the dialog window.
+        """
+        # check if there is a file to play, otherwise open a
+        # wx.FileDialog to select a file
+        if not self.player.get_media():
+            self.OnOpen(None)
+        else:
+            self.play()
     
     def OnPause(self, evt):
         """Pause the player.
@@ -228,8 +225,7 @@ class Player(wx.Frame):
     def errorDialog(self, errormessage):
         """Display a simple error dialog.
         """
-        edialog = wx.MessageDialog(self, errormessage, 'Error', wx.OK|
-                                                                wx.ICON_ERROR)
+        edialog = wx.MessageDialog(self, errormessage, 'Error', wx.OK | wx.ICON_ERROR)
         edialog.ShowModal()
 
 if __name__ == "__main__":
