@@ -36,23 +36,27 @@ class DispatchingPlayer(Player):
 		self.Centre()
 		self.Show()
 
-	def OnPlay(self, evt):
+	def OnPlay(self, evt, dispatch=True):
 		super(DispatchingPlayer, self).OnPlay(evt)
-		self.dispatch(evt="OnPlay", args=(None,))
+		if dispatch: self.dispatch(evt="OnPlayAt", args=(self.getTime(),))
 	
-	def OnPause(self, evt):
+	def OnPlayAt(self, time, dispatch=False):
+		self.seek(time)
+		self.play()
+	
+	def OnPause(self, evt, dispatch=True):
 		super(DispatchingPlayer, self).OnPause(evt)
-		self.dispatch(evt="OnPause", args=(None,))
+		if dispatch: self.dispatch(evt="OnPause", args=(None,))
 	
-	def OnSeek(self, time):
+	def OnSeek(self, time, dispatch=True):
 		super(DispatchingPlayer, self).OnSeek(time)
-		self.dispatch(evt="OnSeek", args=(time,))
+		if dispatch: self.dispatch(evt="OnSeek", args=(time,))
 	
 	def dispatch(self, **d):
 		self.dispatcher.dispatch(d)
 
 	def handleNetworkEvent(self, d):
-		exec("super(DispatchingPlayer, self).%s(*d['args'])" % d["evt"])
+		exec("self.%s(*d['args'], dispatch=False)" % d["evt"])
 	
 class SyncServer(asyncore.dispatcher):
 	def __init__(self, port):
@@ -75,16 +79,16 @@ class SyncServer(asyncore.dispatcher):
 		self.connections.append(conn)
 		conn.sendData("hello %s" % str(pair[1]))
 
-	def dispatch(self, d):
+	def dispatch(self, d, exclude=None):
 		print "dispatching %s" % str(d)
 		for c in self.connections:
-			c.sendData(d)
+			if c != exclude:
+				c.sendData(d)
 
 class DispatcherConnection(asyncore.dispatcher_with_send):
 	def __init__(self, connection, server):
 		asyncore.dispatcher_with_send.__init__(self, connection)
 		self.syncserver = server
-		self.player = server.player
 
 	def writable(self):
 		return bool(self.out_buffer)
@@ -96,7 +100,10 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 		d = pickle.loads(self.recv(8192))
 		print "received: %s " % d
 		if type(d) == dict and "evt" in d:
-			self.player.handleNetworkEvent(d)
+			# forward event to other clients
+			self.syncserver.dispatch(d, exclude=self)
+			# handle in own player
+			self.syncserver.player.handleNetworkEvent(d)			
 
 	def handle_close(self):
 		print "client connection dropped"
@@ -133,11 +140,11 @@ if __name__=='__main__':
 	app = wx.PySimpleApp()
 	
 	argv = sys.argv[1:]
-	if argv[0] == "serve":
+	if len(argv) == 2 and argv[0] == "serve":
 		port = int(argv[1])
 		print "serving on port %d" % port
 		server = SyncServer(port)
-	elif argv[0] == "connect":
+	elif len(argv) == 3 and argv[0] == "connect":
 		server = argv[1]
 		port = int(argv[2])
 		print "connecting to %s:%d" % (server, port)
