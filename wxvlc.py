@@ -126,6 +126,9 @@ class Player(wx.Frame):
     def getMedia(self):
         return self.player.get_media()
     
+    def isPlaying(self):
+        return self.player.is_playing()
+    
     def OnExit(self, evt):
         """Closes the window.
         """
@@ -174,7 +177,6 @@ class Player(wx.Frame):
         """
         # check if there is a file to play, otherwise open a
         # wx.FileDialog to select a file
-        print "media: '%s' (%s)"  % (self.getMedia(), type(self.getMedia()))
         if self.getMedia() is None:
             self.OnOpen(None)
         else:
