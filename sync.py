@@ -30,14 +30,30 @@ import asyncore
 from wxvlc import Player
 
 class DispatchingPlayer(Player):
-	def __init__(self, title, dispatcher):
+	def __init__(self, title, dispatcher, isServer):
 		Player.__init__(self, title)
 		self.dispatcher = dispatcher
+		self.isServer = isServer
 		self.Centre()
 		self.Show()
 
+	def OnOpen(self, evt):
+		super(DispatchingPlayer, self).OnOpen(evt)
+		if not self.isServer:
+			self.dispatch(evt="OnQueryPlayLoc", args=())
+	
+	def OnQueryPlayLoc(self, dispatch=True):
+		if self.isPlaying():
+			self.dispatch(evt="OnPlayAt", args=(self.getTime(),))
+
 	def OnPlay(self, evt, dispatch=True):
-		super(DispatchingPlayer, self).OnPlay(evt)
+		if self.getMedia() is None:
+			self.OnOpen(None)
+			if not self.isServer:
+				dispatch = False
+				self.dispatch(evt="OnQueryPlayLoc", args=())
+		else:
+			self.play()
 		if dispatch: self.dispatch(evt="OnPlayAt", args=(self.getTime(),))
 	
 	def OnPlayAt(self, time, dispatch=False):
@@ -68,7 +84,7 @@ class SyncServer(asyncore.dispatcher):
 		self.connections = []
 		self.listen(5)
 		# create actual player
-		self.player = DispatchingPlayer("Sync'd VLC Server", self)		
+		self.player = DispatchingPlayer("Sync'd VLC Server", self, True)		
 	
 	def handle_accept(self):		
 		pair = self.accept()
@@ -120,7 +136,7 @@ class SyncClient(asyncore.dispatcher):
 		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)		
 		self.connect((server, port))
 		# create actual player
-		self.player = DispatchingPlayer("Sync'd VLC Client", self)	
+		self.player = DispatchingPlayer("Sync'd VLC Client", self, False)	
 		
 	def handle_read(self):
 		d = pickle.loads(self.recv(8192))
