@@ -37,17 +37,21 @@ class Player(wx.Frame):
         self.title = title
         self.useTimer = True
 
-        # Menu Bar
-        #   File Menu
+        # Menu Bar        
         self.frame_menubar = wx.MenuBar()
+        self.SetMenuBar(self.frame_menubar)
+        #   File Menu
         self.file_menu = wx.Menu()
         self.file_menu.Append(1, "&Open", "Open from file..")
         self.file_menu.AppendSeparator()
         self.file_menu.Append(2, "&Close", "Quit")
         self.Bind(wx.EVT_MENU, self.OnOpen, id=1)
         self.Bind(wx.EVT_MENU, self.OnExit, id=2)
-        self.frame_menubar.Append(self.file_menu, "File")
-        self.SetMenuBar(self.frame_menubar)
+        self.frame_menubar.Append(self.file_menu, "File")        
+        #    Audio Menu
+        self.audio_menu = wx.Menu()
+        self.audio_menu_items = []
+        self.frame_menubar.Append(self.audio_menu, "Audio")
 
         # Panels
         # The first panel holds the video and it's all black
@@ -138,7 +142,7 @@ class Player(wx.Frame):
         """Pop up a new dialow window to choose a file, then play the selected file.
         """
         # if a file is already running, then stop it.
-        self.OnStop(None)
+        #self.OnStop(None)
 
         # Create a file dialog opened in the current home directory, where
         # you can display all kind of files, having as title "Choose a file".
@@ -157,18 +161,36 @@ class Player(wx.Frame):
             if title == -1:
                 title = filename
             self.SetTitle("%s - %s" % (title, self.title))
-
+            
             # set the window id where to render VLC's video output
             self.player.set_xwindow(self.videopanel.GetHandle()) # for Linux/Unix
             self.player.set_hwnd(self.videopanel.GetHandle()) # for Windows
 
             self.play()
 
+            # update audio menu
+            for item in self.audio_menu_items:
+                self.audio_menu.RemoveItem(item)
+            self.audio_menu_items = []
+            self.player.video_get_track_description()
+            tracks = self.player.audio_get_track_description() 
+            print "audio tracks:", tracks
+            if len(tracks) == 0: tracks = [(-1, "None"), (1, "1"), (2, "2")] # fallback, because the query doesn't always work
+            for (i, name) in tracks:
+                id = 100 + i
+                self.audio_menu_items.append(self.audio_menu.Append(id, name))
+                self.Bind(wx.EVT_MENU, self.OnSelectAudioTrack, id=id)
+
             # set the volume slider to the current volume
             self.volslider.SetValue(self.player.audio_get_volume() / 2)
 
         # finally destroy the dialog
         dlg.Destroy()
+    
+    def OnSelectAudioTrack(self, evt):
+        track = evt.GetId() - 100
+        print "switching to audio track %d" % track
+        self.player.audio_set_track(track)
 
     def OnPlay(self, evt):
         """Toggle the status to Play/Pause.
