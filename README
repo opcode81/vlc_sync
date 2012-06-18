@@ -7,6 +7,7 @@ vlc_sync - a synchronizing video players for social video watching
 * This video player uses the VLC media player's library for playback,
   so you must have VLC installed for this player to work. 
   http://www.videolan.org
+  vlc_sync was tested with VLC version 1.1.x on Windows and Linux.  
 
 * Python 2.5+ with wxPython installed
 
@@ -19,15 +20,10 @@ Start a client on another machine:
 	python sync.py connect <server> <port>
 
 Load the same video on both computers.
-Seeking, play and pause are sync'd.
+Seek, play and pause are sync'd.
 
 === TODO ===
 
-* initial sync (must be done manually by seeking to start on either machine)
-
-* keeping track of sync in general, perhaps compensating for connection lag 
+* keeping track of sync over time, perhaps compensating for connection lag 
   (could be done smoothly by setting the playback rate; yes, this is 
   supported by VLC).
-
-* proper support for more than one client (client's actions are not echoed 
-  back to other clients, only the server's actions are passed to everyone).
