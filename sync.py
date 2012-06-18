@@ -50,8 +50,7 @@ class DispatchingPlayer(Player):
 		if self.getMedia() is None:
 			self.OnOpen(None)
 			if not self.isServer:
-				dispatch = False
-				self.dispatch(evt="OnQueryPlayLoc", args=())
+				dispatch = False				
 		else:
 			self.play()
 		if dispatch: self.dispatch(evt="OnPlayAt", args=(self.getTime(),))
