@@ -26,4 +26,4 @@ Seek, play and pause are sync'd.
 
 * keeping track of sync over time, perhaps compensating for connection lag 
   (could be done smoothly by setting the playback rate; yes, this is 
-  supported by VLC).
+  supported by VLC). 
