@@ -98,7 +98,10 @@ class SyncServer(asyncore.dispatcher):
 		print "dispatching %s" % str(d)
 		for c in self.connections:
 			if c != exclude:
-				c.sendData(d)
+				try:
+					c.sendData(d)
+				except:
+					pass
 
 class DispatcherConnection(asyncore.dispatcher_with_send):
 	def __init__(self, connection, server):
@@ -122,7 +125,7 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 
 	def handle_close(self):
 		print "client connection dropped"
-		self.syncserver.connections.remove(self)
+		#self.syncserver.connections.remove(self)
 		self.close()
 
 	def sendData(self, d):
@@ -138,10 +141,13 @@ class SyncClient(asyncore.dispatcher):
 		self.player = DispatchingPlayer("Sync'd VLC Client", self, False)	
 		
 	def handle_read(self):
-		d = pickle.loads(self.recv(8192))
-		print "received: %s " % d
-		if type(d) == dict and "evt" in d:
-			self.player.handleNetworkEvent(d)
+		try:
+			d = pickle.loads(self.recv(8192))
+			print "received: %s " % d
+			if type(d) == dict and "evt" in d:
+				self.player.handleNetworkEvent(d)
+		except:
+			pass
 	
 	def dispatch(self, d):
 		print "sending %s" % str(d)
