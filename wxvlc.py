@@ -32,15 +32,13 @@ class Player(wx.Frame):
     """The main window has to deal with events.
     """
     def __init__(self, title):
-        wx.Frame.__init__(self, None, -1, title,
-                          pos=wx.DefaultPosition, size=(550, 500))
+        wx.Frame.__init__(self, None, -1, title, pos=wx.DefaultPosition, size=(550, 500))
         self.title = title
-        self.useTimer = True
 
         # Menu Bar        
         self.frame_menubar = wx.MenuBar()
         self.SetMenuBar(self.frame_menubar)
-        #   File Menu
+        # - file Menu
         self.file_menu = wx.Menu()
         self.file_menu.Append(1, "&Open", "Open from file..")
         self.file_menu.AppendSeparator()
@@ -48,10 +46,15 @@ class Player(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnOpen, id=1)
         self.Bind(wx.EVT_MENU, self.OnExit, id=2)
         self.frame_menubar.Append(self.file_menu, "File")        
-        #    Audio Menu
+        # - audio Menu
         self.audio_menu = wx.Menu()
         self.audio_menu_items = []
         self.frame_menubar.Append(self.audio_menu, "Audio")
+        # - view menu
+        self.view_menu = wx.Menu()
+        fullScreenMI = self.view_menu.Append(wx.ID_ANY,"Full Screen\tF12", "Toggles Full Screen Mode")
+        self.Bind(wx.EVT_MENU, self.OnToggleFullScreen, id=fullScreenMI.GetId())
+        self.frame_menubar.Append(self.view_menu, "View")
 
         # Panels
         # The first panel holds the video and it's all black
@@ -59,13 +62,14 @@ class Player(wx.Frame):
         self.videopanel.SetBackgroundColour(wx.BLACK)
 
         # The second panel holds controls
-        ctrlpanel = wx.Panel(self, -1 )
+        ctrlpanel = wx.Panel(self, -1)
+        self.ctrlpanel = ctrlpanel
         self.timeslider = wx.Slider(ctrlpanel, -1, 0, 0, 1000)
         self.timeslider.SetRange(0, 1000)
         pause  = wx.Button(ctrlpanel, label="Pause")
         play   = wx.Button(ctrlpanel, label="Play")
         stop   = wx.Button(ctrlpanel, label="Stop")
-        volume = wx.Button(ctrlpanel, label="Volume")
+        volume = wx.Button(ctrlpanel, label="Mute")
         self.volslider = wx.Slider(ctrlpanel, -1, 0, 0, 100, size=(100, -1))
 
         # Bind controls to events
@@ -74,7 +78,7 @@ class Player(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.OnStop, stop)
         self.Bind(wx.EVT_BUTTON, self.OnToggleVolume, volume)
         self.Bind(wx.EVT_SLIDER, self.OnSetVolume, self.volslider)
-        self.Bind(wx.EVT_SLIDER, self.OnMoveTimeSlider, self.timeslider)
+        self.Bind(wx.EVT_SLIDER, self.OnMoveTimeSlider, self.timeslider)        
 
         # Give a pretty layout to the controls
         ctrlbox = wx.BoxSizer(wx.VERTICAL)
@@ -83,7 +87,7 @@ class Player(wx.Frame):
         # box1 contains the timeslider
         box1.Add(self.timeslider, 1)
         # box2 contains some buttons and the volume controls
-        box2.Add(play, flag=wx.RIGHT, border=5)
+        box2.Add(play, flag=wx.RIGHT, border=0)
         box2.Add(pause)
         box2.Add(stop)
         box2.Add((-1, -1), 1)
@@ -91,19 +95,20 @@ class Player(wx.Frame):
         box2.Add(self.volslider, flag=wx.TOP | wx.LEFT, border=5)
         # Merge box1 and box2 to the ctrlsizer
         ctrlbox.Add(box1, flag=wx.EXPAND | wx.BOTTOM, border=10)
-        ctrlbox.Add(box2, 1, wx.EXPAND)
+        ctrlbox.Add(box2, 1, wx.EXPAND)        
         ctrlpanel.SetSizer(ctrlbox)
-        # Put everything togheter
+        # Put everything together
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.videopanel, 1, flag=wx.EXPAND)
-        sizer.Add(ctrlpanel, flag=wx.EXPAND | wx.BOTTOM | wx.TOP, border=10)
+        sizer.Add(ctrlpanel, flag=wx.EXPAND | wx.BOTTOM | wx.TOP, border=0)
         self.SetSizer(sizer)
-        self.SetMinSize((350, 300))
+        
+        self.SetMinSize((350, 300))        
+        self.fullscreen = False        
 
         # finally create the timer, which updates the timeslider
-        if self.useTimer:
-            self.timer = wx.Timer(self)
-            self.Bind(wx.EVT_TIMER, self.OnTimer, self.timer)
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.OnTimer, self.timer)
 
         # VLC player controls
         self.Instance = vlc.Instance()
@@ -111,8 +116,7 @@ class Player(wx.Frame):
 
     def play(self):
         if self.player.play() != -1:
-            if self.useTimer:
-                wx.CallAfter(self.timer.Start)
+            wx.CallAfter(self.timer.Start)
     
     def pause(self):
         self.player.pause()
@@ -218,8 +222,7 @@ class Player(wx.Frame):
         self.player.stop()
         # reset the time slider
         self.timeslider.SetValue(0)
-        if self.useTimer:
-            wx.CallAfter(self.timer.Stop)
+        wx.CallAfter(self.timer.Stop)
 
     def OnTimer(self, evt):
         """Update the time slider according to the current movie time.
@@ -253,6 +256,11 @@ class Player(wx.Frame):
     
     def OnSeek(self, time):
         self.seek(time)
+    
+    def OnToggleFullScreen(self, evt):
+        self.fullscreen = not self.fullscreen
+        self.ctrlpanel.Show(not self.fullscreen)
+        self.ShowFullScreen(self.fullscreen)        
 
     def errorDialog(self, errormessage):
         """Display a simple error dialog.
