@@ -98,10 +98,15 @@ class SyncServer(asyncore.dispatcher):
 		print "dispatching %s" % str(d)
 		for c in self.connections:
 			if c != exclude:
-				try:
-					c.sendData(d)
-				except:
-					pass
+				c.sendData(d)
+	
+	def removeConnection(self, conn):
+		if not conn in self.connections:
+			print "tried to remove non-present connection"
+		self.connections.remove(conn)
+		if len(self.connections) == 0:
+			self.player.pause()
+			self.player.errorDialog("All client connections have been closed.")			
 
 class DispatcherConnection(asyncore.dispatcher_with_send):
 	def __init__(self, connection, server):
@@ -115,7 +120,11 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 		self.initiate_send()
 
 	def handle_read(self):
-		d = pickle.loads(self.recv(8192))
+		d = self.recv(8192)
+		if d == "": # connection closed from other end
+			self.remove()
+			return
+		d = pickle.loads(d)
 		print "received: %s " % d
 		if type(d) == dict and "evt" in d:
 			# forward event to other clients
@@ -123,9 +132,11 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 			# handle in own player
 			self.syncserver.player.handleNetworkEvent(d)			
 
-	def handle_close(self):
+	def remove(self):
 		print "client connection dropped"
-		#self.syncserver.connections.remove(self)
+		self.syncserver.removeConnection(self)
+
+	def handle_close(self):
 		self.close()
 
 	def sendData(self, d):
@@ -141,13 +152,15 @@ class SyncClient(asyncore.dispatcher):
 		self.player = DispatchingPlayer("Sync'd VLC Client", self, False)	
 		
 	def handle_read(self):
-		try:
-			d = pickle.loads(self.recv(8192))
-			print "received: %s " % d
-			if type(d) == dict and "evt" in d:
-				self.player.handleNetworkEvent(d)
-		except:
-			pass
+		d = self.recv(8192)
+		if d == "": # server connection lost
+			self.player.pause()
+			self.player.errorDialog("Connection lost")
+			return
+		d = pickle.loads(d)
+		print "received: %s " % d
+		if type(d) == dict and "evt" in d:
+			self.player.handleNetworkEvent(d)
 	
 	def dispatch(self, d):
 		print "sending %s" % str(d)
