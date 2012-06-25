@@ -45,15 +45,20 @@ class Player(wx.Frame):
         self.file_menu.Append(2, "&Close", "Quit")
         self.Bind(wx.EVT_MENU, self.OnOpen, id=1)
         self.Bind(wx.EVT_MENU, self.OnExit, id=2)
-        self.frame_menubar.Append(self.file_menu, "File")        
+        self.frame_menubar.Append(self.file_menu, "File")
+        # - transport menu
+        self.transport_menu = wx.Menu()
+        playMI = self.transport_menu.Append(wx.ID_ANY, "Play/Pause\tSpace")
+        self.Bind(wx.EVT_MENU, self.OnPause, id=playMI.GetId())
+        self.frame_menubar.Append(self.transport_menu, "Transport")
         # - audio Menu
         self.audio_menu = wx.Menu()
-        self.audio_menu_items = []
+        self.audio_menu_items = {}
         self.frame_menubar.Append(self.audio_menu, "Audio")
-        # - view menu
+        # - video menu
         self.view_menu = wx.Menu()
         fullScreenMI = self.view_menu.Append(wx.ID_ANY,"Full Screen\tF12", "Toggles Full Screen Mode")
-        self.Bind(wx.EVT_MENU, self.OnToggleFullScreen, id=fullScreenMI.GetId())
+        self.Bind(wx.EVT_MENU, self.OnToggleFullScreen, id=fullScreenMI.GetId())        
         self.frame_menubar.Append(self.view_menu, "View")
 
         # Panels
@@ -176,16 +181,17 @@ class Player(wx.Frame):
             self.play()
 
             # update audio menu
-            for item in self.audio_menu_items:
-                self.audio_menu.RemoveItem(item)
-            self.audio_menu_items = []
+            for audio_track in self.audio_menu_items.values():
+                self.audio_menu.RemoveItem(audio_track["menu_item"])
+            self.audio_menu_items = {}
             self.player.video_get_track_description()
             tracks = self.player.audio_get_track_description() 
             print "audio tracks:", tracks
             if len(tracks) == 0: tracks = [(-1, "None"), (1, "1"), (2, "2")] # fallback, because the query doesn't always work
-            for (i, name) in tracks:
-                id = 100 + i
-                self.audio_menu_items.append(self.audio_menu.Append(id, name))
+            for (track_no, name) in tracks:
+                menu_item = self.audio_menu.Append(wx.ID_ANY, name)
+                id = menu_item.GetId()
+                self.audio_menu_items[id] = {"menu_item": menu_item, "track_no": track_no}
                 self.Bind(wx.EVT_MENU, self.OnSelectAudioTrack, id=id)
 
             # set the volume slider to the current volume
@@ -195,7 +201,7 @@ class Player(wx.Frame):
         dlg.Destroy()
     
     def OnSelectAudioTrack(self, evt):
-        track = evt.GetId() - 100
+        track = self.audio_menu_items[evt.GetId()]["track_no"]
         print "switching to audio track %d" % track
         self.player.audio_set_track(track)
 
