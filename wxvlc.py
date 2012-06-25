@@ -114,6 +114,9 @@ class Player(wx.Frame):
             if self.useTimer:
                 wx.CallAfter(self.timer.Start)
     
+    def pause(self):
+        self.player.pause()
+    
     def seek(self, time):
         self.player.set_time(time)
         
@@ -207,7 +210,7 @@ class Player(wx.Frame):
     def OnPause(self, evt):
         """Pause the player.
         """
-        self.player.pause()
+        self.pause()
 
     def OnStop(self, evt):
         """Stop the player.
