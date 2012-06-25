@@ -61,7 +61,12 @@ class DispatchingPlayer(Player):
 	
 	def OnPause(self, evt, dispatch=True):
 		super(DispatchingPlayer, self).OnPause(evt)
-		if dispatch: self.dispatch(evt="OnPause", args=(None,))
+		if dispatch:
+			self.dispatch(evt="OnPauseAt", args=(self.getTime(),))
+	
+	def OnPauseAt(self, time, dispatch=False):
+		self.seek(time)
+		self.pause()
 	
 	def OnSeek(self, time, dispatch=True):
 		super(DispatchingPlayer, self).OnSeek(time)
@@ -156,6 +161,7 @@ class SyncClient(asyncore.dispatcher):
 		if d == "": # server connection lost
 			self.player.pause()
 			self.player.errorDialog("Connection lost")
+			self.player.Close()
 			return
 		d = pickle.loads(d)
 		print "received: %s " % d
