@@ -49,7 +49,7 @@ class Player(wx.Frame):
         # - transport menu
         self.transport_menu = wx.Menu()
         playMI = self.transport_menu.Append(wx.ID_ANY, "Play/Pause\tSpace")
-        self.Bind(wx.EVT_MENU, self.OnPause, id=playMI.GetId())
+        self.Bind(wx.EVT_MENU, self.OnPlayPause, id=playMI.GetId())
         self.frame_menubar.Append(self.transport_menu, "Transport")
         # - audio Menu
         self.audio_menu = wx.Menu()
@@ -117,14 +117,14 @@ class Player(wx.Frame):
 
         # VLC player controls
         self.Instance = vlc.Instance()
-        self.player = self.Instance.media_player_new()
+        self.player = self.Instance.media_player_new()        
 
     def play(self):
         if self.player.play() != -1:
             wx.CallAfter(self.timer.Start)
     
     def pause(self):
-        self.player.pause()
+        self.player.set_pause(1)
     
     def seek(self, time):
         self.player.set_time(time)
@@ -144,6 +144,9 @@ class Player(wx.Frame):
     
     def isPlaying(self):
         return self.player.is_playing()
+
+    def isPaused(self):
+        return self.player.get_state() == vlc.State.Paused
     
     def OnExit(self, evt):
         """Closes the window.
@@ -262,6 +265,12 @@ class Player(wx.Frame):
     
     def OnSeek(self, time):
         self.seek(time)
+    
+    def OnPlayPause(self, evt):
+        if self.isPaused():
+            self.OnPlay(None)
+        else:
+            self.OnPause(None)
     
     def OnToggleFullScreen(self, evt):
         self.fullscreen = not self.fullscreen
