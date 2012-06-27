@@ -28,6 +28,7 @@ import pickle
 import wx
 import asyncore
 from wxvlc import Player
+import time as t
 
 class DispatchingPlayer(Player):
 	def __init__(self, title, dispatcher, isServer):
@@ -43,8 +44,8 @@ class DispatchingPlayer(Player):
 			self.dispatch(evt="OnQueryPlayLoc", args=())
 	
 	def OnQueryPlayLoc(self, dispatch=True):
-		if self.isPlaying():
-			self.dispatch(evt="OnPlayAt", args=(self.getTime(),))
+		if not self.isServer or self.getMedia() is None: return
+		self.dispatch(evt="OnPlayAt" if not self.isPaused() else "OnPauseAt", args=(self.getTime(),))
 
 	def OnPlay(self, evt, dispatch=True):
 		if self.getMedia() is None:
@@ -100,7 +101,7 @@ class SyncServer(asyncore.dispatcher):
 		conn.sendData("hello %s" % str(pair[1]))
 
 	def dispatch(self, d, exclude=None):
-		print "dispatching %s" % str(d)
+		print "dispatching %s to %d client(s)" % (str(d), len(self.connections) if exclude is None else len(self.connections)-1)
 		for c in self.connections:
 			if c != exclude:
 				c.sendData(d)
@@ -126,8 +127,7 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 
 	def handle_read(self):
 		d = self.recv(8192)
-		if d == "": # connection closed from other end
-			self.remove()
+		if d == "": # connection closed from other end			
 			return
 		d = pickle.loads(d)
 		print "received: %s " % d
@@ -142,10 +142,10 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 		self.syncserver.removeConnection(self)
 
 	def handle_close(self):
+		self.remove()
 		self.close()
 
 	def sendData(self, d):
-		print "sending %s" % str(d)
 		self.send(pickle.dumps(d))
 
 class SyncClient(asyncore.dispatcher):	
