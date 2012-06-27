@@ -27,6 +27,7 @@ import vlc
 # import standard libraries
 import os
 import user
+import time
 
 class Player(wx.Frame):
     """The main window has to deal with events.
@@ -132,7 +133,7 @@ class Player(wx.Frame):
     def updateTimeSlider(self):
         # update length
         length = self.player.get_length()
-        self.timeslider.SetRange(-1, length)
+        self.timeslider.SetRange(0, length)
         # update the time on the slider
         self.timeslider.SetValue(self.getTime())
     
@@ -161,8 +162,7 @@ class Player(wx.Frame):
 
         # Create a file dialog opened in the current home directory, where
         # you can display all kind of files, having as title "Choose a file".
-        dlg = wx.FileDialog(self, "Choose a file", user.home, "",
-                            "*.*", wx.OPEN)
+        dlg = wx.FileDialog(self, "Choose a file", user.home, "", "*.*", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             dirname = dlg.GetDirectory()
             filename = dlg.GetFilename()
@@ -183,6 +183,10 @@ class Player(wx.Frame):
 
             self.play()
 
+            # wait until the video is really playing, so audio track query will work
+            while not self.player.is_playing():
+                time.sleep(0.01)
+            
             # update audio menu
             for audio_track in self.audio_menu_items.values():
                 self.audio_menu.RemoveItem(audio_track["menu_item"])
@@ -190,7 +194,7 @@ class Player(wx.Frame):
             self.player.video_get_track_description()
             tracks = self.player.audio_get_track_description() 
             print "audio tracks:", tracks
-            if len(tracks) == 0: tracks = [(-1, "None"), (1, "1"), (2, "2")] # fallback, because the query doesn't always work
+            if len(tracks) == 0: tracks = [(-1, "None"), (1, "1"), (2, "2")] # fallback (should no longer be required)
             for (track_no, name) in tracks:
                 menu_item = self.audio_menu.Append(wx.ID_ANY, name)
                 id = menu_item.GetId()
