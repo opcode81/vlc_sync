@@ -77,6 +77,7 @@ class Player(wx.Frame):
         stop   = wx.Button(ctrlpanel, label="Stop")
         volume = wx.Button(ctrlpanel, label="Mute")
         self.volslider = wx.Slider(ctrlpanel, -1, 0, 0, 100, size=(100, -1))
+        self.timeDisplay = wx.StaticText(ctrlpanel, label=" 0:00:00", style=wx.ALIGN_RIGHT)
 
         # Bind controls to events
         self.Bind(wx.EVT_BUTTON, self.OnPlay, play)
@@ -86,16 +87,17 @@ class Player(wx.Frame):
         self.Bind(wx.EVT_SLIDER, self.OnSetVolume, self.volslider)
         self.Bind(wx.EVT_SLIDER, self.OnMoveTimeSlider, self.timeslider)        
 
-        # Give a pretty layout to the controls
+        # Give a pretty layout to the controls        
         ctrlbox = wx.BoxSizer(wx.VERTICAL)
         box1 = wx.BoxSizer(wx.HORIZONTAL)
         box2 = wx.BoxSizer(wx.HORIZONTAL)
         # box1 contains the timeslider
+        box1.Add(self.timeDisplay, flag=wx.CENTER)
         box1.Add(self.timeslider, 1)
         # box2 contains some buttons and the volume controls
         box2.Add(play, flag=wx.RIGHT, border=0)
         box2.Add(pause)
-        box2.Add(stop)
+        box2.Add(stop)        
         box2.Add((-1, -1), 1)
         box2.Add(volume)
         box2.Add(self.volslider, flag=wx.TOP | wx.LEFT, border=5)
@@ -122,7 +124,7 @@ class Player(wx.Frame):
 
     def play(self):
         if self.player.play() != -1:
-            wx.CallAfter(self.timer.Start)
+            wx.CallAfter(self.timer.Start, 75)
     
     def pause(self):
         self.player.set_pause(1)
@@ -135,7 +137,16 @@ class Player(wx.Frame):
         length = self.player.get_length()
         self.timeslider.SetRange(0, length)
         # update the time on the slider
-        self.timeslider.SetValue(self.getTime())
+        currentTime = self.getTime()
+        self.timeslider.SetValue(currentTime)
+        # update time display
+        secs = currentTime / 1000        
+        minutes = secs / 60
+        hours = minutes / 60
+        secs = secs % 60
+        minutes = minutes % 60
+        display = " %d:%02d:%02d" % (hours, minutes, secs)
+        self.timeDisplay.SetLabel(display)
     
     def getTime(self):
         return self.player.get_time()
@@ -193,7 +204,6 @@ class Player(wx.Frame):
             self.audio_menu_items = {}
             self.player.video_get_track_description()
             tracks = self.player.audio_get_track_description() 
-            print "audio tracks:", tracks
             if len(tracks) == 0: tracks = [(-1, "None"), (1, "1"), (2, "2")] # fallback (should no longer be required)
             for (track_no, name) in tracks:
                 menu_item = self.audio_menu.Append(wx.ID_ANY, name)
