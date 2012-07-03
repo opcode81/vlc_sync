@@ -180,22 +180,30 @@ if __name__=='__main__':
 	app = wx.PySimpleApp()
 	
 	argv = sys.argv[1:]
-	if len(argv) == 2 and argv[0] == "serve":
+	file = None
+	if len(argv) in (2, 3) and argv[0] == "serve":
 		port = int(argv[1])
 		print "serving on port %d" % port
 		server = SyncServer(port)
-	elif len(argv) == 3 and argv[0] == "connect":
+		player = server.player
+		if len(argv) == 3: file = argv[2]
+	elif len(argv) in (3, 4) and argv[0] == "connect":
 		server = argv[1]
 		port = int(argv[2])
 		print "connecting to %s:%d" % (server, port)
 		client = SyncClient(server, port)
+		player = client.player
+		if len(argv) == 4: file = argv[3]
 	else:
 		appName = "sync.py"
 		print "\nvlc_sync\n\n"
 		print "usage:"
-		print "   server:  %s serve <port>" % appName
-		print "   client:  %s connect <server> <port>" % appName
+		print "   server:  %s serve <port> [file]" % appName
+		print "   client:  %s connect <server> <port> [file]" % appName
 		sys.exit(1)
+	
+	if file is not None:
+		player.open(file)
 	
 	networkThread = threading.Thread(target=networkLoop)
 	networkThread.daemon = True

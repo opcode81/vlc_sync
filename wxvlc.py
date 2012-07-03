@@ -160,6 +160,45 @@ class Player(wx.Frame):
     def isPaused(self):
         return self.player.get_state() == vlc.State.Paused
     
+    def open(self, path):
+        self.Media = self.Instance.media_new(unicode(path))
+        self.player.set_media(self.Media)
+        # Report the title of the file chosen
+        title = self.player.get_title()
+        #  if an error was encountred while retriving the title, then use
+        #  filename
+        filename = os.path.basename(path)
+        if title == -1:
+            title = filename
+        self.SetTitle("%s - %s" % (title, self.title))
+        
+        # set the window id where to render VLC's video output
+        self.player.set_xwindow(self.videopanel.GetHandle()) # for Linux/Unix
+        self.player.set_hwnd(self.videopanel.GetHandle()) # for Windows
+
+        self.play()
+
+        # wait until the video is really playing, so audio track query will work
+        while not self.player.is_playing():
+            time.sleep(0.01)
+        
+        # update audio menu
+        for audio_track in self.audio_menu_items.values():
+            self.audio_menu.RemoveItem(audio_track["menu_item"])
+        self.audio_menu_items = {}
+        self.player.video_get_track_description()
+        tracks = self.player.audio_get_track_description() 
+        if len(tracks) == 0: tracks = [(-1, "None"), (1, "1"), (2, "2")] # fallback (should no longer be required)
+        for (track_no, name) in tracks:
+            menu_item = self.audio_menu.Append(wx.ID_ANY, name)
+            id = menu_item.GetId()
+            self.audio_menu_items[id] = {"menu_item": menu_item, "track_no": track_no}
+            self.Bind(wx.EVT_MENU, self.OnSelectAudioTrack, id=id)
+
+        # set the volume slider to the current volume
+        self.volslider.SetValue(self.player.audio_get_volume() / 2)
+
+    
     def OnExit(self, evt):
         """Closes the window.
         """
@@ -177,42 +216,7 @@ class Player(wx.Frame):
         if dlg.ShowModal() == wx.ID_OK:
             dirname = dlg.GetDirectory()
             filename = dlg.GetFilename()
-            # Creation
-            self.Media = self.Instance.media_new(unicode(os.path.join(dirname, filename)))
-            self.player.set_media(self.Media)
-            # Report the title of the file chosen
-            title = self.player.get_title()
-            #  if an error was encountred while retriving the title, then use
-            #  filename
-            if title == -1:
-                title = filename
-            self.SetTitle("%s - %s" % (title, self.title))
-            
-            # set the window id where to render VLC's video output
-            self.player.set_xwindow(self.videopanel.GetHandle()) # for Linux/Unix
-            self.player.set_hwnd(self.videopanel.GetHandle()) # for Windows
-
-            self.play()
-
-            # wait until the video is really playing, so audio track query will work
-            while not self.player.is_playing():
-                time.sleep(0.01)
-            
-            # update audio menu
-            for audio_track in self.audio_menu_items.values():
-                self.audio_menu.RemoveItem(audio_track["menu_item"])
-            self.audio_menu_items = {}
-            self.player.video_get_track_description()
-            tracks = self.player.audio_get_track_description() 
-            if len(tracks) == 0: tracks = [(-1, "None"), (1, "1"), (2, "2")] # fallback (should no longer be required)
-            for (track_no, name) in tracks:
-                menu_item = self.audio_menu.Append(wx.ID_ANY, name)
-                id = menu_item.GetId()
-                self.audio_menu_items[id] = {"menu_item": menu_item, "track_no": track_no}
-                self.Bind(wx.EVT_MENU, self.OnSelectAudioTrack, id=id)
-
-            # set the volume slider to the current volume
-            self.volslider.SetValue(self.player.audio_get_volume() / 2)
+            self.open(os.path.join(dirname, filename))
 
         # finally destroy the dialog
         dlg.Destroy()
