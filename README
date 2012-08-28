@@ -1,6 +1,5 @@
-
-vlc_sync - a synchronizing video players for social video watching
-------------------------------------------------------------------
+vlc_sync - a synchronizing video player for social video watching
+-----------------------------------------------------------------
 
 === Prerequisites ===
 
@@ -16,10 +15,10 @@ vlc_sync - a synchronizing video players for social video watching
 Start a server:
 	python sync.py serve <port>
 
-Start a client on another machine:
+Start one or more clients on remote machines:
 	python sync.py connect <server> <port>
 
-Load the same video on both computers.
+Load the same video on all computers.
 Seek, play and pause are sync'd.
 
 === TODO ===
