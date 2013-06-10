@@ -172,10 +172,6 @@ class SyncClient(asyncore.dispatcher):
 		print "sending %s" % str(d)
 		self.send(pickle.dumps(d))
 
-def networkLoop():
-	while True:
-		asyncore.poll(0.01)
-
 if __name__=='__main__':
 	app = wx.PySimpleApp()
 	
@@ -205,7 +201,7 @@ if __name__=='__main__':
 	if file is not None:
 		player.open(file)
 	
-	networkThread = threading.Thread(target=networkLoop)
+	networkThread = threading.Thread(target=lambda:asyncore.loop())
 	networkThread.daemon = True
 	networkThread.start()
 	
