@@ -20,9 +20,3 @@ Start one or more clients on remote machines:
 
 Load the same video on all computers.
 Seek, play and pause are sync'd.
-
-=== TODO ===
-
-* keeping track of sync over time, perhaps compensating for connection lag 
-  (could be done smoothly by setting the playback rate; yes, this is 
-  supported by VLC). 
