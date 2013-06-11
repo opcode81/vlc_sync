@@ -29,12 +29,14 @@ import wx
 import asyncore
 from wxvlc import Player
 import time as t
+import traceback
 
 class DispatchingPlayer(Player):
 	def __init__(self, title, dispatcher, isServer):
 		Player.__init__(self, title)
 		self.dispatcher = dispatcher
 		self.isServer = isServer
+		self.lastPing = t.time()
 		self.Centre()
 		self.Show()
 
@@ -61,6 +63,12 @@ class DispatchingPlayer(Player):
 		self.play()
 	
 	def OnPause(self, evt, dispatch=True):
+		if self.isServer and not hasattr(self, "doneit"):
+			self.doneit=True
+			print "closing client connections"
+			for conn in self.dispatcher.connections:
+				conn.handle_close()			
+			return
 		super(DispatchingPlayer, self).OnPause(evt)
 		if dispatch:
 			self.dispatch(evt="OnPauseAt", args=(self.getTime(),))
@@ -78,6 +86,14 @@ class DispatchingPlayer(Player):
 
 	def handleNetworkEvent(self, d):
 		exec("self.%s(*d['args'], dispatch=False)" % d["evt"])
+		
+	def OnTimer(self, evt):
+		Player.OnTimer(self, evt)
+		# perform periodic ping from client to server
+		if not self.isServer:
+			if t.time() - self.lastPing > 1:
+				self.lastPing = t.time()
+				self.dispatch(ping = True)
 	
 class SyncServer(asyncore.dispatcher):
 	def __init__(self, port):
@@ -107,6 +123,7 @@ class SyncServer(asyncore.dispatcher):
 				c.sendData(d)
 	
 	def removeConnection(self, conn):
+		traceback.print_stack()
 		if not conn in self.connections:
 			print "tried to remove non-present connection"
 		self.connections.remove(conn)
@@ -130,6 +147,8 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 		if d == "": # connection closed from other end			
 			return
 		d = pickle.loads(d)
+		if type(d) == dict and "ping" in d: # ignore pings
+			return
 		print "received: %s " % d
 		if type(d) == dict and "evt" in d:
 			# forward event to other clients
@@ -150,11 +169,21 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 
 class SyncClient(asyncore.dispatcher):	
 	def __init__(self, server, port):
-		asyncore.dispatcher.__init__(self)
-		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)		
-		self.connect((server, port))
+		asyncore.dispatcher.__init__(self)		
+		self.serverAddress = (server, port)
+		self.connectedToServer = self.connectingToServer = False
+		self.connectToServer()
 		# create actual player
-		self.player = DispatchingPlayer("Sync'd VLC Client", self, False)	
+		self.player = DispatchingPlayer("Sync'd VLC Client", self, False)
+
+	def connectToServer(self):
+		self.connectingToServer = True
+		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)		
+		self.connect(self.serverAddress)
+	
+	def handle_connect(self):
+		self.connectingToServer = False
+		self.connectedToServer = True
 		
 	def handle_read(self):
 		d = self.recv(8192)
@@ -166,17 +195,28 @@ class SyncClient(asyncore.dispatcher):
 			self.player.handleNetworkEvent(d)
 	
 	def handle_close(self):
-		self.player.pause()
-		self.player.errorDialog("Connection lost")
-		self.player.Close()
 		self.close()
 		
+	def readable(self):
+		return True
+	
+	def writable(self):
+		return True
+		
 	def close(self):
-		print "called close"
 		asyncore.dispatcher.close(self)
+		traceback.print_stack()
+		self.connectedToServer = False
+		self.player.pause()
+		self.player.errorDialog("Connection lost. Click OK to attempt reconnect.")		
 	
 	def dispatch(self, d):
-		print "sending %s" % str(d)
+		if not self.connectedToServer:
+			if not self.connectingToServer:
+				self.connectToServer()
+			return
+		if not (type(d) == dict and "ping" in d):
+			print "sending %s" % str(d)
 		self.send(pickle.dumps(d))
 
 if __name__=='__main__':
