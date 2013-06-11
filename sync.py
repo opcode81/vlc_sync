@@ -63,12 +63,11 @@ class DispatchingPlayer(Player):
 		self.play()
 	
 	def OnPause(self, evt, dispatch=True):
-		if self.isServer and not hasattr(self, "doneit"):
-			self.doneit=True
-			print "closing client connections"
-			for conn in self.dispatcher.connections:
-				conn.handle_close()			
-			return
+		#if self.isServer: 
+		#	print "closing client connections"
+		#	for conn in self.dispatcher.connections:
+		#		conn.handle_close()			
+		#	return
 		super(DispatchingPlayer, self).OnPause(evt)
 		if dispatch:
 			self.dispatch(evt="OnPauseAt", args=(self.getTime(),))
@@ -176,11 +175,13 @@ class SyncClient(asyncore.dispatcher):
 		self.player = DispatchingPlayer("Sync'd VLC Client", self, False)
 
 	def connectToServer(self):
+		print "connecting to %s..." % str(self.serverAddress)
 		self.connectingToServer = True
 		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)		
 		self.connect(self.serverAddress)
 	
 	def handle_connect(self):
+		print "connected to %s" % str(self.serverAddress)
 		self.connectingToServer = False
 		self.connectedToServer = True
 		# immediately request current playback data
@@ -205,16 +206,15 @@ class SyncClient(asyncore.dispatcher):
 		return True
 		
 	def close(self):
-		asyncore.dispatcher.close(self)
-		traceback.print_stack()
+		print "connection closed"
 		self.connectedToServer = False
+		asyncore.dispatcher.close(self)
 		self.player.pause()
-		self.player.errorDialog("Connection lost. Click OK to attempt reconnect.")		
+		self.player.errorDialog("No connection. Click OK to reconnect.")		
+		self.connectToServer()
 	
 	def dispatch(self, d):
 		if not self.connectedToServer:
-			if not self.connectingToServer:
-				self.connectToServer()
 			return
 		if not (type(d) == dict and "ping" in d):
 			print "sending %s" % str(d)
