@@ -123,7 +123,6 @@ class SyncServer(asyncore.dispatcher):
 				c.sendData(d)
 	
 	def removeConnection(self, conn):
-		traceback.print_stack()
 		if not conn in self.connections:
 			print "tried to remove non-present connection"
 		self.connections.remove(conn)
@@ -184,6 +183,8 @@ class SyncClient(asyncore.dispatcher):
 	def handle_connect(self):
 		self.connectingToServer = False
 		self.connectedToServer = True
+		# immediately request current playback data
+		self.player.dispatch(evt="OnQueryPlayLoc", args=())
 		
 	def handle_read(self):
 		d = self.recv(8192)
