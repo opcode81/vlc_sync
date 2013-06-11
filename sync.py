@@ -159,14 +159,21 @@ class SyncClient(asyncore.dispatcher):
 	def handle_read(self):
 		d = self.recv(8192)
 		if d == "": # server connection lost
-			self.player.pause()
-			self.player.errorDialog("Connection lost")
-			self.player.Close()
 			return
 		d = pickle.loads(d)
 		print "received: %s " % d
 		if type(d) == dict and "evt" in d:
 			self.player.handleNetworkEvent(d)
+	
+	def handle_close(self):
+		self.player.pause()
+		self.player.errorDialog("Connection lost")
+		self.player.Close()
+		self.close()
+		
+	def close(self):
+		print "called close"
+		asyncore.dispatcher.close(self)
 	
 	def dispatch(self, d):
 		print "sending %s" % str(d)
