@@ -210,8 +210,10 @@ class SyncClient(asyncore.dispatcher):
 		self.connectedToServer = False
 		asyncore.dispatcher.close(self)
 		self.player.pause()
-		self.player.errorDialog("No connection. Click OK to reconnect.")		
-		self.connectToServer()
+		if self.player.questionDialog("No connection. Reconnect?\nClick 'No' to quit.", "Reconnect?"):
+			self.connectToServer()
+		else:
+			self.player.Close()
 	
 	def dispatch(self, d):
 		if not self.connectedToServer:
