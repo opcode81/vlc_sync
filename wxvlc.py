@@ -300,6 +300,11 @@ class Player(wx.Frame):
         """
         edialog = wx.MessageDialog(self, errormessage, 'Error', wx.OK | wx.ICON_ERROR)
         edialog.ShowModal()
+    
+    def questionDialog(self, message, title = "Error"):
+        """Displays a yes/no dialog, returning true if the user clicked yes, false otherwise
+        """
+        return wx.MessageDialog(self, message, title, wx.YES_NO | wx.ICON_QUESTION).ShowModal() == wx.ID_YES
 
 if __name__ == "__main__":
     # Create a wx.App(), which handles the windowing system event loop
