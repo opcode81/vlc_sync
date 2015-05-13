@@ -95,10 +95,10 @@ class DispatchingPlayer(Player):
 				self.dispatch(ping = True)
 	
 class SyncServer(asyncore.dispatcher):
-	def __init__(self, port):
+	def __init__(self, port, ipv6=False):
 		asyncore.dispatcher.__init__(self)
 		# start listening for connections
-		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.create_socket(socket.AF_INET6 if ipv6 else socket.AF_INET, socket.SOCK_STREAM)
 		host = ""
 		self.bind((host, port))
 		self.connections = []
@@ -166,18 +166,19 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 		self.send(pickle.dumps(d))
 
 class SyncClient(asyncore.dispatcher):	
-	def __init__(self, server, port):
+	def __init__(self, server, port, ipv6=False):
 		asyncore.dispatcher.__init__(self)		
 		self.serverAddress = (server, port)
 		self.connectedToServer = self.connectingToServer = False
+		self.ipv6 = ipv6
 		self.connectToServer()
 		# create actual player
 		self.player = DispatchingPlayer("Sync'd VLC Client", self, False)
 
-	def connectToServer(self):
+	def connectToServer(self, ipv6=False):
 		print "connecting to %s..." % str(self.serverAddress)
 		self.connectingToServer = True
-		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)		
+		self.create_socket(socket.AF_INET6 if self.ipv6 else socket.AF_INET, socket.SOCK_STREAM)
 		self.connect(self.serverAddress)
 	
 	def handle_connect(self):
@@ -227,25 +228,41 @@ if __name__=='__main__':
 	
 	argv = sys.argv[1:]
 	file = None
-	if len(argv) in (2, 3) and argv[0] == "serve":
-		port = int(argv[1])
-		print "serving on port %d" % port
-		server = SyncServer(port)
-		player = server.player
-		if len(argv) == 3: file = argv[2]
-	elif len(argv) in (3, 4) and argv[0] == "connect":
-		server = argv[1]
-		port = int(argv[2])
-		print "connecting to %s:%d" % (server, port)
-		client = SyncClient(server, port)
-		player = client.player
-		if len(argv) == 4: file = argv[3]
-	else:
+	ipv6 = False
+	help = True
+	while len(argv) > 0:
+		a = argv[0]
+		if a == "serve" and len(argv) in (2, 3):
+			help = False
+			port = int(argv[1])
+			print "serving on port %d" % port
+			server = SyncServer(port, ipv6=ipv6)
+			player = server.player
+			if len(argv) == 3: file = argv[2]
+		elif a == "connect" and len(argv) in (3, 4):
+			help = False
+			server = argv[1]
+			port = int(argv[2])
+			print "connecting to %s:%d" % (server, port)
+			client = SyncClient(server, port, ipv6=ipv6)
+			player = client.player
+			if len(argv) == 4: file = argv[3]
+		elif a == "--ipv6":
+			ipv6 = True
+			argv = argv[1:]
+		else:
+			print "invalid argument: %s" % a
+			help = True
+			break
+			
+	if help:
 		appName = "sync.py"
-		print "\nvlc_sync\n\n"
+		print "\nvlc_sync by Dominik Jain\n\n"
 		print "usage:"
-		print "   server:  %s serve <port> [file]" % appName
-		print "   client:  %s connect <server> <port> [file]" % appName
+		print "   server:  %s serve [options] <port> [file]" % appName
+		print "   client:  %s connect [options] <server> <port> [file]" % appName
+		print "\noptions:"
+		print "   --ipv6   use IPv6 instead of IPv4"
 		sys.exit(1)
 	
 	if file is not None:
