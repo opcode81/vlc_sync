@@ -5,6 +5,8 @@
 # WX example for VLC Python bindings
 # Copyright (C) 2009-2010 the VideoLAN team
 #
+# Functionality extended by Dominik Jain
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
@@ -308,7 +310,7 @@ class Player(wx.Frame):
 
 if __name__ == "__main__":
     # Create a wx.App(), which handles the windowing system event loop
-    app = wx.PySimpleApp()
+    app = wx.App()
     # Create the window containing our small media player
     player = Player("Simple PyVLC Player")
     # show the player window centred and run the application

@@ -1,6 +1,6 @@
 # vlc_sync
 #
-# (C) 2012 by Dominik Jain (djain@gmx.net)
+# (C) 2012-2015 by Dominik Jain (djain@gmx.net)
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -224,7 +224,7 @@ class SyncClient(asyncore.dispatcher):
 		self.send(pickle.dumps(d))
 
 if __name__=='__main__':
-	app = wx.PySimpleApp()
+	app = wx.App()
 	
 	argv = sys.argv[1:]
 	file = None
@@ -239,6 +239,7 @@ if __name__=='__main__':
 			server = SyncServer(port, ipv6=ipv6)
 			player = server.player
 			if len(argv) == 3: file = argv[2]
+			break
 		elif a == "connect" and len(argv) in (3, 4):
 			help = False
 			server = argv[1]
@@ -247,11 +248,12 @@ if __name__=='__main__':
 			client = SyncClient(server, port, ipv6=ipv6)
 			player = client.player
 			if len(argv) == 4: file = argv[3]
+			break
 		elif a == "--ipv6":
 			ipv6 = True
 			argv = argv[1:]
 		else:
-			print "invalid argument: %s" % a
+			print "invalid series of arguments: %s" % str(argv)
 			help = True
 			break
 			
