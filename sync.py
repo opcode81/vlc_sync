@@ -261,8 +261,8 @@ if __name__=='__main__':
 		appName = "sync.py"
 		print "\nvlc_sync by Dominik Jain\n\n"
 		print "usage:"
-		print "   server:  %s serve [options] <port> [file]" % appName
-		print "   client:  %s connect [options] <server> <port> [file]" % appName
+		print "   server:  %s [options] serve <port> [file]" % appName
+		print "   client:  %s [options] connect <server> <port> [file]" % appName
 		print "\noptions:"
 		print "   --ipv6   use IPv6 instead of IPv4"
 		sys.exit(1)
