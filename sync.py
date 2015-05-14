@@ -175,7 +175,7 @@ class SyncClient(asyncore.dispatcher):
 		# create actual player
 		self.player = DispatchingPlayer("Sync'd VLC Client", self, False)
 
-	def connectToServer(self, ipv6=False):
+	def connectToServer(self):
 		print "connecting to %s..." % str(self.serverAddress)
 		self.connectingToServer = True
 		self.create_socket(socket.AF_INET6 if self.ipv6 else socket.AF_INET, socket.SOCK_STREAM)
