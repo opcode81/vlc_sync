@@ -64,40 +64,43 @@ def find_lib():
         except OSError:  # may fail
             dll = ctypes.CDLL('libvlc.so.5')
     elif sys.platform.startswith('win'):
-        p = find_library('libvlc.dll')
-        if p is None:
-            try:  # some registry settings
-                import _winreg as w  # leaner than win32api, win32con
-                for r in w.HKEY_LOCAL_MACHINE, w.HKEY_CURRENT_USER:
-                    try:
-                        r = w.OpenKey(r, 'Software\\VideoLAN\\VLC')
-                        plugin_path, _ = w.QueryValueEx(r, 'InstallDir')
-                        w.CloseKey(r)
-                        break
-                    except w.error:
-                        pass
-            except ImportError:  # no PyWin32
-                pass
-            if plugin_path is None:
-                 # try some standard locations.
-                for p in ('Program Files\\VideoLan\\', 'VideoLan\\',
-                          'Program Files\\',           ''):
-                    p = 'C:\\' + p + 'VLC\\libvlc.dll'
-                    if os.path.exists(p):
-                        plugin_path = os.path.dirname(p)
-                        break
-            if plugin_path is not None:  # try loading
-                p = os.getcwd()
-                os.chdir(plugin_path)
-                 # if chdir failed, this will raise an exception
-                dll = ctypes.CDLL('libvlc.dll')
-                 # restore cwd after dll has been loaded
-                os.chdir(p)
-            else:  # may fail
-                dll = ctypes.CDLL('libvlc.dll')
+        if os.path.exists('libvlc.dll'): # prefer local DLL
+            dll = ctypes.CDLL('libvlc.dll')
         else:
-            plugin_path = os.path.dirname(p)
-            dll = ctypes.CDLL(p)
+            p = find_library('libvlc.dll')
+            if p is None:
+                try:  # some registry settings
+                    import _winreg as w  # leaner than win32api, win32con
+                    for r in w.HKEY_LOCAL_MACHINE, w.HKEY_CURRENT_USER:
+                        try:
+                            r = w.OpenKey(r, 'Software\\VideoLAN\\VLC')
+                            plugin_path, _ = w.QueryValueEx(r, 'InstallDir')
+                            w.CloseKey(r)
+                            break
+                        except w.error:
+                            pass
+                except ImportError:  # no PyWin32
+                    pass
+                if plugin_path is None:
+                     # try some standard locations.
+                    for p in ('Program Files\\VideoLan\\', 'VideoLan\\',
+                              'Program Files\\',           ''):
+                        p = 'C:\\' + p + 'VLC\\libvlc.dll'
+                        if os.path.exists(p):
+                            plugin_path = os.path.dirname(p)
+                            break
+                if plugin_path is not None:  # try loading
+                    p = os.getcwd()
+                    os.chdir(plugin_path)
+                     # if chdir failed, this will raise an exception
+                    dll = ctypes.CDLL('libvlc.dll')
+                     # restore cwd after dll has been loaded
+                    os.chdir(p)
+                else:  # may fail
+                    dll = ctypes.CDLL('libvlc.dll')
+            else:
+                plugin_path = os.path.dirname(p)
+                dll = ctypes.CDLL(p)
 
     elif sys.platform.startswith('darwin'):
         # FIXME: should find a means to configure path
