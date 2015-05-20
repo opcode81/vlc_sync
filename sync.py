@@ -224,7 +224,7 @@ class SyncClient(asyncore.dispatcher):
 		self.send(pickle.dumps(d))
 
 if __name__=='__main__':
-	app = wx.App()
+	app = wx.App(redirect=False)
 	
 	argv = sys.argv[1:]
 	file = None
