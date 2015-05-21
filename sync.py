@@ -223,56 +223,9 @@ class SyncClient(asyncore.dispatcher):
 			print "sending %s" % str(d)
 		self.send(pickle.dumps(d))
 
-if __name__=='__main__':
-	app = wx.App(redirect=False)
-	
-	argv = sys.argv[1:]
-	file = None
-	ipv6 = False
-	help = True
-	while len(argv) > 0:
-		a = argv[0]
-		if a == "serve" and len(argv) in (2, 3):
-			help = False
-			port = int(argv[1])
-			print "serving on port %d" % port
-			server = SyncServer(port, ipv6=ipv6)
-			player = server.player
-			if len(argv) == 3: file = argv[2]
-			break
-		elif a == "connect" and len(argv) in (3, 4):
-			help = False
-			server = argv[1]
-			port = int(argv[2])
-			print "connecting to %s:%d" % (server, port)
-			client = SyncClient(server, port, ipv6=ipv6)
-			player = client.player
-			if len(argv) == 4: file = argv[3]
-			break
-		elif a == "--ipv6":
-			ipv6 = True
-			argv = argv[1:]
-		else:
-			print "invalid series of arguments: %s" % str(argv)
-			help = True
-			break
-			
-	if help:
-		appName = "sync.py"
-		print "\nvlc_sync by Dominik Jain\n\n"
-		print "usage:"
-		print "   server:  %s [options] serve <port> [file]" % appName
-		print "   client:  %s [options] connect <server> <port> [file]" % appName
-		print "\noptions:"
-		print "   --ipv6   use IPv6 instead of IPv4"
-		sys.exit(1)
-	
-	if file is not None:
-		player.open(file)
-	
+def startNetworkThread():
 	networkThread = threading.Thread(target=lambda:asyncore.loop())
 	networkThread.daemon = True
 	networkThread.start()
-	
-	app.MainLoop()
+
 	
