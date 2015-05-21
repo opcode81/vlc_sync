@@ -104,7 +104,7 @@ class SyncServer(asyncore.dispatcher):
 		self.connections = []
 		self.listen(5)
 		# create actual player
-		self.player = DispatchingPlayer("Sync'd VLC Server", self, True)		
+		self.player = DispatchingPlayer("VLC_SYNC Server", self, True)		
 	
 	def handle_accept(self):		
 		pair = self.accept()
@@ -173,7 +173,7 @@ class SyncClient(asyncore.dispatcher):
 		self.ipv6 = ipv6
 		self.connectToServer()
 		# create actual player
-		self.player = DispatchingPlayer("Sync'd VLC Client", self, False)
+		self.player = DispatchingPlayer("VLC_SYNC Client", self, False)
 
 	def connectToServer(self):
 		print "connecting to %s..." % str(self.serverAddress)

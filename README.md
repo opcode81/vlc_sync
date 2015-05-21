@@ -31,6 +31,6 @@ The general procedure is this:
 - Load the desired video file on all machines
 - Seek, play and pause are synchronized. Enjoy the video.
 
-The Python script `sync.py` is used to spawn both servers and clients. Simply run the script from the command line and additional information on usage will be provided. 
+The Python script `vlc_sync.py` is used to spawn both servers and clients. Simply run the script from the command line and a dialog prompting for connection parameters will appear. Alternatively, connection parameters may be specified directly from the command line. Run the script with parameter `--help` for additional information. 
 
 Note that for connections to be established, a port on the computer running the server must be reachable to the clients (which may necessitate changes to the home network's routing or firewall configuration).

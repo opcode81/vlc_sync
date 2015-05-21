@@ -6,16 +6,15 @@ import pickle
 
 class ConnectionDialog(wx.Dialog):
     def __init__(self, title, mode=None, server=None, port=None, ipv6=None):
-        super(ConnectionDialog, self).__init__(None) 
+        super(ConnectionDialog, self).__init__(None, style=wx.CAPTION) 
             
-        #self.SetSize((250, 200))
         self.SetTitle(title)
         
-        pnl = wx.Panel(self)
-        vbox = wx.BoxSizer(wx.VERTICAL)
+        pnl = wx.Panel(self, size=(250,200))
+        gbs = wx.GridBagSizer(7, 7)
         
         hbox = wx.BoxSizer(wx.HORIZONTAL)        
-        self.rbClient = wx.RadioButton(pnl, label='Client', style=wx.RB_GROUP)
+        self.rbClient = wx.RadioButton(pnl, label='Client  ', style=wx.RB_GROUP)
         self.rbServer = wx.RadioButton(pnl, label='Server')
         self.rbClient.Bind(wx.EVT_RADIOBUTTON, self.onSelectMode)
         self.rbServer.Bind(wx.EVT_RADIOBUTTON, self.onSelectMode)
@@ -23,11 +22,9 @@ class ConnectionDialog(wx.Dialog):
             self.rbServer.SetValue(mode == "serve")
         hbox.Add(self.rbClient)
         hbox.Add(self.rbServer)
-        vbox.Add(hbox, 1, wx.EXPAND | wx.ALL)
+        gbs.Add(hbox, pos=(0, 0), span=(1,2), flag=wx.EXPAND | wx.ALL)
         
-        grid = wx.FlexGridSizer(rows=3, cols=2, vgap=9, hgap=25)
-        
-        self.serverInput = wx.TextCtrl(pnl)
+        self.serverInput = wx.TextCtrl(pnl, size=(250,-1))
         if server is not None:
             self.serverInput.SetValue(server)
 
@@ -38,22 +35,24 @@ class ConnectionDialog(wx.Dialog):
         self.cbIPV6 = wx.CheckBox(pnl, label="IPv6")
         if ipv6 is not None:
             self.cbIPV6.SetValue(ipv6)
-        
-        grid.AddMany([wx.StaticText(pnl, label="Server:  "), (self.serverInput, 1, wx.EXPAND),
-                      wx.StaticText(pnl, label="Port:"), self.portInput,
-                      wx.StaticText(pnl), self.cbIPV6])
-        grid.AddGrowableCol(1, 1)
-        grid.AddGrowableRow(2, 1)
-        vbox.Add(grid, 1, wx.EXPAND | wx.ALL)
+    
+        gbs.Add(wx.StaticText(pnl, label="Server:  "), pos=(1,0))
+        gbs.Add(self.serverInput, pos=(1,1), flag=wx.EXPAND | wx.HORIZONTAL)
+        gbs.Add(wx.StaticText(pnl, label="Port:"), pos=(2,0))
+        gbs.Add(self.portInput, pos=(2,1))
+        gbs.Add(self.cbIPV6, pos=(3,1))
+        gbs.AddGrowableCol(1)
+        gbs.AddGrowableRow(2)
         
         self.button = wx.Button(pnl, label="Start")
-        vbox.Add(self.button, 1, wx.EXPAND | wx.HORIZONTAL)
+        gbs.Add(self.button, pos=(4,0), span=(1,2), flag=wx.EXPAND | wx.HORIZONTAL, border=5)
         self.button.Bind(wx.EVT_BUTTON, self.onStart)
         
+        pnl.SetSizerAndFit(gbs)
         
-        hbox = wx.BoxSizer(wx.HORIZONTAL)
-        hbox.Add(vbox, proportion=1, flag=wx.ALL|wx.EXPAND, border=15)
-        pnl.SetSizer(hbox)
+        hbox = wx.BoxSizer(wx.VERTICAL)
+        hbox.Add(pnl, proportion=1, flag=wx.ALL|wx.EXPAND, border=15)
+        self.SetSizerAndFit(hbox)
         
         self.onSelectMode(None)
     
