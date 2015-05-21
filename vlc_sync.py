@@ -6,10 +6,10 @@ import pickle
 
 class ConnectionDialog(wx.Dialog):
     def __init__(self, title, mode=None, server=None, port=None, ipv6=None):
-        super(ConnectionDialog, self).__init__(None, style=wx.CAPTION) 
+        super(ConnectionDialog, self).__init__(None) 
             
         self.SetTitle(title)
-        
+
         pnl = wx.Panel(self, size=(250,200))
         gbs = wx.GridBagSizer(7, 7)
         
@@ -63,7 +63,7 @@ class ConnectionDialog(wx.Dialog):
             self.serverInput.Disable()
     
     def onStart(self, evt):
-        self.Close(True)
+        self.EndModal(0)
     
     def getData(self):
         return ("connect" if self.rbClient.GetValue() else "serve", self.serverInput.GetValue(), self.portInput.GetValue(), self.cbIPV6.GetValue())
@@ -156,7 +156,8 @@ if __name__=='__main__':
                 port = config.get("port")
                 ipv6 = config.get("ipv6")
         dlg = ConnectionDialog("VLC_SYNC", mode=mode, server=server, port=port, ipv6=ipv6)
-        dlg.ShowModal()
+        if dlg.ShowModal() != 0:
+            sys.exit(0)
         mode, server, port, ipv6 = dlg.getData()
         port = int(port)
         dlg.Destroy()
