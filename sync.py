@@ -95,7 +95,7 @@ class DispatchingPlayer(Player):
 				self.dispatch(ping = True)
 	
 class SyncServer(asyncore.dispatcher):
-	def __init__(self, port, ipv6=False):
+	def __init__(self, appName, port, ipv6=False):
 		asyncore.dispatcher.__init__(self)
 		# start listening for connections
 		self.create_socket(socket.AF_INET6 if ipv6 else socket.AF_INET, socket.SOCK_STREAM)
@@ -104,7 +104,7 @@ class SyncServer(asyncore.dispatcher):
 		self.connections = []
 		self.listen(5)
 		# create actual player
-		self.player = DispatchingPlayer("VLC_SYNC Server", self, True)		
+		self.player = DispatchingPlayer("%s Server" % appName, self, True)		
 	
 	def handle_accept(self):		
 		pair = self.accept()
@@ -166,14 +166,14 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 		self.send(pickle.dumps(d))
 
 class SyncClient(asyncore.dispatcher):	
-	def __init__(self, server, port, ipv6=False):
+	def __init__(self, appName, server, port, ipv6=False):
 		asyncore.dispatcher.__init__(self)		
 		self.serverAddress = (server, port)
 		self.connectedToServer = self.connectingToServer = False
 		self.ipv6 = ipv6
 		self.connectToServer()
 		# create actual player
-		self.player = DispatchingPlayer("VLC_SYNC Client", self, False)
+		self.player = DispatchingPlayer("%s Client" % appName, self, False)
 
 	def connectToServer(self):
 		print "connecting to %s..." % str(self.serverAddress)
