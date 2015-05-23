@@ -34,9 +34,10 @@ import time
 class Player(wx.Frame):
     """The main window has to deal with events.
     """
-    def __init__(self, title):
+    def __init__(self, title, version):
         wx.Frame.__init__(self, None, -1, title, pos=wx.DefaultPosition, size=(550, 500))
         self.title = title
+        self.version = version
 
         # Menu Bar        
         self.frame_menubar = wx.MenuBar()
@@ -63,6 +64,11 @@ class Player(wx.Frame):
         fullScreenMI = self.view_menu.Append(wx.ID_ANY,"Full Screen\tF12", "Toggles Full Screen Mode")
         self.Bind(wx.EVT_MENU, self.OnToggleFullScreen, id=fullScreenMI.GetId())        
         self.frame_menubar.Append(self.view_menu, "View")
+        # - help menu
+        self.help_menu = wx.Menu()
+        aboutMI = self.help_menu.Append(wx.ID_ANY, "About")
+        self.Bind(wx.EVT_MENU, self.OnAbout, id=aboutMI.GetId())
+        self.frame_menubar.Append(self.help_menu, "Help")
 
         # Panels
         # The first panel holds the video and it's all black
@@ -101,7 +107,7 @@ class Player(wx.Frame):
         box2.Add(pause)
         box2.Add(stop)        
         box2.Add((-1, -1), 1)
-        box2.Add(volume)
+        box2.Add(volume)        
         box2.Add(self.volslider, flag=wx.TOP | wx.LEFT, border=5)
         # Merge box1 and box2 to the ctrlsizer
         ctrlbox.Add(box1, flag=wx.EXPAND | wx.BOTTOM, border=10)
@@ -295,7 +301,11 @@ class Player(wx.Frame):
     def OnToggleFullScreen(self, evt):
         self.fullscreen = not self.fullscreen
         self.ctrlpanel.Show(not self.fullscreen)
-        self.ShowFullScreen(self.fullscreen)        
+        self.ShowFullScreen(self.fullscreen)       
+    
+    def OnAbout(self, evt):
+        dialog = wx.MessageDialog(self, self.title + " " + self.version + "\n\nby Dominik Jain", 'About', wx.OK | wx.ICON_INFORMATION)
+        dialog.ShowModal()
 
     def errorDialog(self, errormessage):
         """Display a simple error dialog.
@@ -312,7 +322,7 @@ if __name__ == "__main__":
     # Create a wx.App(), which handles the windowing system event loop
     app = wx.App()
     # Create the window containing our small media player
-    player = Player("Simple PyVLC Player")
+    player = Player("wxVLC", "v1.0")
     # show the player window centred and run the application
     player.Centre()
     player.Show()

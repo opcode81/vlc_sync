@@ -70,6 +70,7 @@ class ConnectionDialog(wx.Dialog):
 
 if __name__=='__main__':
     appName = "vlc_sync"
+    version = "v1.0"
     app = wx.App(redirect=False)
     
     argv = sys.argv[1:]
@@ -113,7 +114,7 @@ if __name__=='__main__':
         help = True
             
     if help:
-        print "\nvlc_sync by Dominik Jain\n\n"
+        print "\n%s %s by Dominik Jain\n\n" % (appName, version)
         print "usage:"
         print "   server:  %s [options] [serve <port> [file]]" % appName
         print "   client:  %s [options] [connect <server> <port> [file]]" % appName
@@ -131,10 +132,10 @@ if __name__=='__main__':
             pickle.dump({"mode":mode, "server":server, "port":port, "ipv6":ipv6}, f)
         if mode == "serve":
             print "serving on port %d" % port
-            player = SyncServer(appName, port, ipv6=ipv6).player
+            player = SyncServer(appName, version, port, ipv6=ipv6).player
         else:
             print "connecting to %s:%d" % (server, port)
-            player = SyncClient(appName, server, port, ipv6=ipv6).player
+            player = SyncClient(appName, version, server, port, ipv6=ipv6).player
         
         if file is not None:
             player.open(file)
