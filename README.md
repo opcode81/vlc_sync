@@ -12,7 +12,7 @@ As the name suggests, vlc\_sync builds upon the technology of VideoLAN's famous 
 
 ### Prebuilt Binaries ###
 
-For Windows, a [prebuilt executable version](http://www.power-xs.net/software/downloads/vlc_sync.zip) is available, which already includes everything you need. (A separate installation of a Python interpreter or VLC media player is not required.) 
+For Windows, a [prebuilt executable version](http://www.power-xs.net/opcode/nop/software/downloads/vlc_sync.zip) is available, which already includes everything you need. (A separate installation of a Python interpreter or VLC media player is not required.) 
 
 ### Running the Source Version ###
 
