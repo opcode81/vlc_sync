@@ -59,6 +59,10 @@ class Player(wx.Frame):
         self.audio_menu = wx.Menu()
         self.audio_menu_items = {}
         self.frame_menubar.Append(self.audio_menu, "Audio")
+        # - subtitles Menu
+        self.subs_menu = wx.Menu()
+        self.subs_menu_items = {}
+        self.frame_menubar.Append(self.subs_menu, "Subtitles")
         # - video menu
         self.view_menu = wx.Menu()
         fullScreenMI = self.view_menu.Append(wx.ID_ANY,"Full Screen\tF12", "Toggles Full Screen Mode")
@@ -203,6 +207,18 @@ class Player(wx.Frame):
             self.audio_menu_items[id] = {"menu_item": menu_item, "track_no": track_no}
             self.Bind(wx.EVT_MENU, self.OnSelectAudioTrack, id=id)
 
+        # update subs menu
+        for subs_track in self.subs_menu_items.values():
+            self.subs_menu.RemoveItem(audio_track["menu_item"])
+        self.subs_menu_items = {}
+        self.player.video_get_track_description()
+        tracks = self.player.video_get_spu_description()
+        for i, (track_no, name) in enumerate(tracks):
+            menu_item = self.subs_menu.Append(wx.ID_ANY, name)
+            id = menu_item.GetId()
+            self.subs_menu_items[id] = {"menu_item": menu_item, "track_no": i} # Weird! Looks like one has to use the index instead of track_no.
+            self.Bind(wx.EVT_MENU, self.OnSelectSubsTrack, id=id)
+
         # set the volume slider to the current volume
         self.volslider.SetValue(self.player.audio_get_volume() / 2)
 
@@ -233,6 +249,12 @@ class Player(wx.Frame):
         track = self.audio_menu_items[evt.GetId()]["track_no"]
         print "switching to audio track %d" % track
         self.player.audio_set_track(track)
+        
+    def OnSelectSubsTrack(self, evt):
+        track = self.subs_menu_items[evt.GetId()]["track_no"]
+        print "switching to subs track %d" % track
+        if self.player.video_set_spu(track) == -1:
+            print "failed to set subs track"
 
     def OnPlay(self, evt):
         """Toggle the status to Play/Pause.
