@@ -198,8 +198,8 @@ class Player(wx.Frame):
         for audio_track in self.audio_menu_items.values():
             self.audio_menu.RemoveItem(audio_track["menu_item"])
         self.audio_menu_items = {}
-        self.player.video_get_track_description()
         tracks = self.player.audio_get_track_description() 
+        print "audio tracks: %s" % str(tracks)
         if len(tracks) == 0: tracks = [(-1, "None"), (1, "1"), (2, "2")] # fallback (should no longer be required)
         for (track_no, name) in tracks:
             menu_item = self.audio_menu.Append(wx.ID_ANY, name)
@@ -211,8 +211,8 @@ class Player(wx.Frame):
         for subs_track in self.subs_menu_items.values():
             self.subs_menu.RemoveItem(audio_track["menu_item"])
         self.subs_menu_items = {}
-        self.player.video_get_track_description()
         tracks = self.player.video_get_spu_description()
+        print "subs tracks: %s" % str(tracks)
         for i, (track_no, name) in enumerate(tracks):
             menu_item = self.subs_menu.Append(wx.ID_ANY, name)
             id = menu_item.GetId()
