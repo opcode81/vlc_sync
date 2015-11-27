@@ -93,7 +93,7 @@ class ConnectionDialog(wx.Dialog):
 
 if __name__=='__main__':
     appName = "vlc_sync"
-    version = "v1.0"
+    version = "v1.1"
     app = wx.App(redirect=False)
     
     argv = sys.argv[1:]
@@ -103,6 +103,7 @@ if __name__=='__main__':
     file = None
     mode = None
     server = None
+    dedicated = False
     port = None
     ipv6 = False
     help = False
@@ -127,6 +128,8 @@ if __name__=='__main__':
         elif a in ("--help", "-?", "-h", "/?", "/h"):
             help = True
             break
+        elif a == "--dedicated":
+            dedicated = True
         else:
             print "invalid series of arguments: %s" % str(argv)
             help = True
@@ -139,11 +142,12 @@ if __name__=='__main__':
     if help:
         print "\n%s %s by Dominik Jain\n\n" % (appName, version)
         print "usage:"
-        print "   server:  %s [options] [serve <port> [file]]" % appName
-        print "   client:  %s [options] [connect <server> <port> [file]]" % appName
+        print "   server:  %s [options] serve [--dedicated] <port> [file]" % appName
+        print "   client:  %s [options] connect <server> <port> [file]" % appName
         print "\noptions:"
-        print "   --ipv6   use IPv6 instead of IPv4"
-        print "   --gui    use GUI to specify client/server parameters"
+        print "   --ipv6       use IPv6 instead of IPv4"
+        print "   --gui        use GUI to specify client/server parameters"        
+        print "   --dedicated  ['serve' only] dedicated server mode"
         sys.exit(0)
 
     home = os.path.expanduser("~")
@@ -155,15 +159,15 @@ if __name__=='__main__':
             pickle.dump({"mode":mode, "server":server, "port":port, "ipv6":ipv6}, f)
         if mode == "serve":
             print "serving on port %d" % port
-            player = SyncServer(appName, version, port, ipv6=ipv6).player
+            player = SyncServer(appName, version, port, ipv6=ipv6, dedicated=dedicated).player
         else:
             print "connecting to %s:%d" % (server, port)
             player = SyncClient(appName, version, server, port, ipv6=ipv6).player
         
-        if file is not None:
+        if file is not None and player is not None:
             player.open(file)
     
-        startNetworkThread()
+        startNetworkThread(daemon=not dedicated)
 
     if not gui:
         openPlayer()

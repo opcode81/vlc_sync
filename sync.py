@@ -46,7 +46,7 @@ class DispatchingPlayer(Player):
 			self.dispatch(evt="OnQueryPlayLoc", args=())
 	
 	def OnQueryPlayLoc(self, dispatch=True):
-		if not self.isServer or self.getMedia() is None: return
+		if self.getMedia() is None: return
 		self.dispatch(evt="OnPlayAt" if not self.isPaused() else "OnPauseAt", args=(self.getTime(),))
 
 	def OnPlay(self, evt, dispatch=True):
@@ -95,7 +95,7 @@ class DispatchingPlayer(Player):
 				self.dispatch(ping = True)
 	
 class SyncServer(asyncore.dispatcher):
-	def __init__(self, appName, version, port, ipv6=False):
+	def __init__(self, appName, version, port, ipv6=False, dedicated=False):
 		asyncore.dispatcher.__init__(self)
 		# start listening for connections
 		self.create_socket(socket.AF_INET6 if ipv6 else socket.AF_INET, socket.SOCK_STREAM)
@@ -103,9 +103,10 @@ class SyncServer(asyncore.dispatcher):
 		self.bind((host, port))
 		self.connections = []
 		self.listen(5)
+		self.dedicated = dedicated
 		# create actual player
-		self.player = DispatchingPlayer("%s Server" % appName, version, self, True)		
-	
+		self.player = None if dedicated else DispatchingPlayer("%s Server" % appName, version, self, True)		
+
 	def handle_accept(self):		
 		pair = self.accept()
 		if pair is None:
@@ -125,9 +126,22 @@ class SyncServer(asyncore.dispatcher):
 		if not conn in self.connections:
 			print "tried to remove non-present connection"
 		self.connections.remove(conn)
-		if len(self.connections) == 0:
+		if len(self.connections) == 0 and self.player is not None:
 			self.player.pause()
-			self.player.errorDialog("All client connections have been closed.")			
+			self.player.errorDialog("All client connections have been closed.")		
+
+	def handleEvent(self, d, connection):
+		forward = True
+		if self.dedicated:
+			forward = True
+		else:
+			forward = d["evt"] != "OnQueryPlayLoc"
+		# forward event to other clients
+		if forward:
+			self.dispatch(d, exclude=connection)
+		# handle in own player
+		if not self.dedicated:
+			self.player.handleNetworkEvent(d)
 
 class DispatcherConnection(asyncore.dispatcher_with_send):
 	def __init__(self, connection, server):
@@ -149,10 +163,7 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 			return
 		print "received: %s " % d
 		if type(d) == dict and "evt" in d:
-			# forward event to other clients
-			self.syncserver.dispatch(d, exclude=self)
-			# handle in own player
-			self.syncserver.player.handleNetworkEvent(d)			
+			self.syncserver.handleEvent(d, self)	
 
 	def remove(self):
 		print "client connection dropped"
@@ -223,9 +234,9 @@ class SyncClient(asyncore.dispatcher):
 			print "sending %s" % str(d)
 		self.send(pickle.dumps(d))
 
-def startNetworkThread():
+def startNetworkThread(daemon=True):
 	networkThread = threading.Thread(target=lambda:asyncore.loop())
-	networkThread.daemon = True
+	networkThread.daemon = daemon
 	networkThread.start()
 
 	
